@@ -16,19 +16,22 @@
     "stream player"
   ],
   "author": {
-    "name": "Jason",
-    "email": "412300204@qq.com"
+    "name": "adam",
+    "email": "513755770@qq.com"
   },
   "license": "BSD",
   "repository": {
     "type": "git",
-    "url": "https://github.com/itgou/react-native-easy-ijkplayer"
+    "url": "https://github.com/Adamcrg/react-native-easy-ijkplayer.git"
   },
   "peerDependencies": {
-    "react": "^16.2.0",
-    "react-native": "^0.41.2"
+    "react": "^17.0.1",
+    "react-native": "0.64.2"
   },
   "dependencies": {
-    "prop-types": "15.6.0"
+    "@types/react": "^17.0.38",
+    "@types/react-native": "^0.66.10",
+    "react": "^17.0.1",
+    "react-native": "0.64.2"
   }
 }

@@ -4,17 +4,18 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
-
 import java.io.IOException;
 
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
+
+
+
 
 public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventListener {
 
@@ -81,6 +82,10 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
 
 
     private void initIjkMediaPlayerListener() {
+
+        mIjkPlayer.setLogEnabled(true);
+
+        mIjkPlayer.native_setLogLevel(2);
         mIjkPlayer.setOnPreparedListener(new IMediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(IMediaPlayer iMediaPlayer) {
@@ -131,6 +136,30 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
                 stop();
             }
         });
+        //增加视频秒开功能
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1);
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "fast", 1);//不额外优化
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 200);//10240
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1);
+        //pause output until enough packets have been read after stalling
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 0);//是否开启缓冲
+        //drop frames when cpu is too slow：0-120
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 120);//丢帧,默认是1
+        //automatically start playing on prepared
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 1);
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_CODEC, "skip_loop_filter", 48);//默认值48
+        //0：代表关闭；1：代表开启
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);//开启硬解
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-auto-rotate", 0);//自动旋屏
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec-handle-resolution-change", 0);//处理分辨率变化
+        //max buffer size should be pre-read：默认为15*1024*1024
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "max-buffer-size", 0);//最大缓存数
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "min-frames", 2);//默认最小帧数2
+
+        //input buffer:don't limit the input buffer size (useful with realtime streams)
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "infbuf", 1);//是否限制输入缓存数
+        mIjkPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "fflags", "nobuffer");
+
     }
 
     private void sendEvent(String eventName, String paramName, String paramValue) {
@@ -179,6 +208,7 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
             }
             resetSurfaceView();
             mManualPause = false;
+            sendEvent(NAME_INFO_EVENT, "info", "playing");
         } else {
             setDataSource(mCurrUrl);
             initIjkMediaPlayerListener();
@@ -186,6 +216,7 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
             resetSurfaceView();
             mIjkPlayer.prepareAsync();
             mManualStop = false;
+            sendEvent(NAME_INFO_EVENT, "info", "playing");
         }
     }
 
@@ -195,6 +226,7 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
             mManualPause = true;
             mHandler.removeCallbacks(progressUpdateRunnable);
         }
+        sendEvent(NAME_INFO_EVENT, "info", "paused");
     }
 
     public void stop() {
@@ -203,6 +235,7 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
             mIjkPlayer.reset();
             mIjkPlayer = null;
             mManualStop = true;
+            sendEvent(NAME_INFO_EVENT, "info", "stop");
             mHandler.removeCallbacks(progressUpdateRunnable);
         }
     }
@@ -229,7 +262,7 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
         Log.i(TAG, "onHostResume");
         if (!mManualPause) {
             Log.i(TAG, "exec start");
-            mIjkPlayer.start();
+//            mIjkPlayer.start();
             mHandler.post(progressUpdateRunnable);
         }
     }
@@ -237,8 +270,13 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
     @Override
     public void onHostPause() {
         Log.i(TAG, "onHostPause");
-        mIjkPlayer.pause();
-        mHandler.removeCallbacks(progressUpdateRunnable);
+        try {
+            if(mIjkPlayer==null) return;
+//            mIjkPlayer.pause();
+            mHandler.removeCallbacks(progressUpdateRunnable);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
