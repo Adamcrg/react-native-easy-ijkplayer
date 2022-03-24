@@ -1,9 +1,12 @@
 package com.easy.ijkplayer;
 
+import android.graphics.SurfaceTexture;
 import android.os.Handler;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactContext;
@@ -12,12 +15,13 @@ import com.facebook.react.uimanager.events.RCTEventEmitter;
 import java.io.IOException;
 
 import tv.danmaku.ijk.media.player.IMediaPlayer;
+import tv.danmaku.ijk.media.player.ISurfaceTextureHolder;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
 
 
 
-public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventListener {
+public class RNEasyIjkplayerView extends TextureView implements LifecycleEventListener {
 
     private static final String TAG = "IJKPlayer";
     private static final String NAME_ERROR_EVENT = "onError";
@@ -33,6 +37,8 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
     private String mCurrUrl;
     private boolean mManualPause;
     private boolean mManualStop;
+    private SurfaceTexture mSurfaceTexture;
+    private  Surface mSurface;
     private Handler mHandler = new Handler();
     private Runnable progressUpdateRunnable = new Runnable() {
         @Override
@@ -57,22 +63,41 @@ public class RNEasyIjkplayerView extends SurfaceView implements LifecycleEventLi
 
 
     private void initSurfaceView() {
-        this.getHolder().addCallback(new SurfaceHolder.Callback() {
+        this.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                Log.i(TAG, "surface created");
-                mIjkPlayer.setDisplay(holder);
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int i, int i1) {
+                Log.d(TAG, "onSurfaceTextureAvailable: ");
+                if (mSurfaceTexture != null){
+                    setSurfaceTexture(mSurfaceTexture);
+                    if (mManualPause){
+                        mManualPause = false;
+                        mIjkPlayer.start();
+                    }
+
+                }else {
+                    mSurfaceTexture = surface;
+                    mSurface = new Surface(surface);
+                    mIjkPlayer.setSurface(mSurface);
+                }
+
             }
 
             @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-                Log.i(TAG, "surface changed");
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
+
             }
 
             @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-                Log.i(TAG, "surface destroyed");
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+                return false;
             }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+            }
+
+
         });
     }
 
