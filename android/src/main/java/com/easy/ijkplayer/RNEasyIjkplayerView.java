@@ -307,8 +307,15 @@ public class RNEasyIjkplayerView extends TextureView implements LifecycleEventLi
     @Override
     public void onHostDestroy() {
         Log.i(TAG, "onHostDestroy");
-        mIjkPlayer.stop();
+            try {
+            if(mIjkPlayer==null) return;
+
+              mIjkPlayer.stop();
         mIjkPlayer.release();
         mHandler.removeCallbacks(progressUpdateRunnable);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+     
     }
 }
